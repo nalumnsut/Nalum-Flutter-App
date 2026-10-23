@@ -1,0 +1,9 @@
+# Every PR needs approval from a maintainer or the project lead (docs/WORKFLOW.md §1).
+# The team slug must exist in the nalumnsut org (docs/WORKFLOW.md §11).
+*                                   @nalumnsut/app-maintainers @codrjatin
+
+# Permanent store-facing settings: ids, signing, permissions, release pipeline.
+/apps/mobile/android/               @nalumnsut/app-maintainers @codrjatin
+/apps/mobile/ios/                   @nalumnsut/app-maintainers @codrjatin
+/.github/workflows/                 @nalumnsut/app-maintainers @codrjatin
+/AGENTS.md                          @nalumnsut/app-maintainers @codrjatin

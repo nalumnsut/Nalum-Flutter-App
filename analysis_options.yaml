@@ -1,0 +1,22 @@
+# One analysis config for the whole workspace. Members inherit it because the
+# analyzer walks up the directory tree. Zero-warning policy: tool/check.sh runs
+# `flutter analyze --fatal-infos`, so infos fail the gate too (AGENTS.md "Conventions").
+include: package:very_good_analysis/analysis_options.yaml
+
+analyzer:
+  exclude:
+    - "**/*.g.dart"
+    - "**/*.freezed.dart"
+    - "**/l10n/generated/**"
+    - "**/build/**"
+  errors:
+    # A missing case in a switch over a sealed type must stop the build.
+    non_exhaustive_switch_statement: error
+    non_exhaustive_switch_expression: error
+
+linter:
+  rules:
+    # App code is not a published library; dartdoc on every public member is noise.
+    public_member_api_docs: false
+    # `dart format` owns line length; long string literals and URLs are fine.
+    lines_longer_than_80_chars: false

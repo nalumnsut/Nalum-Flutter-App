@@ -1,0 +1,15 @@
+# Workspace root. It is not an app: it ties the app and the shared packages
+# into one dependency resolution (one pubspec.lock) — see docs/ARCHITECTURE.md §2.
+name: nalum_workspace
+publish_to: none
+
+environment:
+  sdk: ^3.11.0
+
+workspace:
+  - apps/mobile
+  - packages/nalum_api
+  - packages/nalum_ui
+
+dev_dependencies:
+  very_good_analysis: ^10.0.0

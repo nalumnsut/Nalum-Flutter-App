@@ -1,0 +1,60 @@
+# One ignore file for the workspace. Only apps/mobile and its android/ and
+# ios/ folders keep their own (Flutter-specific native build outputs).
+
+# Dart / Flutter
+.dart_tool/
+build/
+coverage/
+.flutter-plugins
+.flutter-plugins-dependencies
+pubspec_overrides.yaml
+**/doc/api/
+migrate_working_dir/
+
+# Only the root lockfile is real (pub workspace); members never have one.
+apps/**/pubspec.lock
+packages/**/pubspec.lock
+
+# FVM: .fvmrc is committed, the downloaded SDK is not
+.fvm/
+
+# IDEs: share only the recommended VS Code settings
+*.iml
+*.ipr
+*.iws
+.idea/
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+!.vscode/launch.json
+
+# AI tools: personal settings stay local (AGENTS.md / CLAUDE.md are shared)
+.claude/settings.local.json
+
+# OS and editor junk
+.DS_Store
+Thumbs.db
+*.swp
+*.log
+.history/
+
+# Secrets — never commit (AGENTS.md "Hard rules" → Security)
+*.jks
+*.keystore
+*.p12
+*.p8
+*.mobileprovision
+key.properties
+.env
+.env.*
+service-account*.json
+
+# Personal build config (e.g. LAN IP for a physical phone)
+apps/mobile/config/local.json
+
+# Release artifacts and symbols
+*.aab
+*.apk
+*.ipa
+app.*.symbols
+app.*.map.json

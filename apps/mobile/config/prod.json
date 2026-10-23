@@ -1,0 +1,6 @@
+{
+  "FLAVOR": "prod",
+  "API_BASE_URL": "https://alumni.nsut.ac.in/api",
+  "SOCKET_URL": "https://alumni.nsut.ac.in",
+  "WEB_BASE_URL": "https://alumni.nsut.ac.in"
+}

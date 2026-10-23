@@ -1,0 +1,10 @@
+targets:
+  $default:
+    builders:
+      json_serializable:
+        options:
+          # The proposed v1 API is snake_case (docs/API.md §3). Legacy fields
+          # that are camelCase on today's backend use an explicit @JsonKey.
+          field_rename: snake
+          explicit_to_json: true
+          checked: true
