@@ -96,7 +96,7 @@ jobs:
         run: flutter build apk --debug --flavor dev --dart-define-from-file=config/dev.json
 
       # Reviewers install this to try the PR on a phone.
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: nalum-dev-pr-${{ github.event.pull_request.number }}
           path: apps/mobile/build/app/outputs/flutter-apk/app-dev-debug.apk
