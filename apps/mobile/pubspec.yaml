@@ -1,0 +1,34 @@
+name: nalum_app
+description: NALUM — the NSUT Alumni Association mobile app.
+publish_to: none
+version: 0.1.0+1
+
+environment:
+  sdk: ^3.11.0
+
+resolution: workspace
+
+dependencies:
+  dio: ^5.11.1
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+  flutter_riverpod: ^3.3.2
+  flutter_secure_storage: ^11.2.0
+  go_router: ^17.5.0
+  intl: ^0.20.2
+  meta: ^1.17.0
+  nalum_api:
+    path: ../../packages/nalum_api
+  nalum_ui:
+    path: ../../packages/nalum_ui
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  mocktail: ^1.0.5
+
+flutter:
+  uses-material-design: true
+  generate: true

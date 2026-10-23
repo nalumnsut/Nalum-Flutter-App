@@ -1,0 +1,6 @@
+{
+  "FLAVOR": "staging",
+  "API_BASE_URL": "https://staging-alumni.nsut.ac.in/api",
+  "SOCKET_URL": "https://staging-alumni.nsut.ac.in",
+  "WEB_BASE_URL": "https://staging-alumni.nsut.ac.in"
+}

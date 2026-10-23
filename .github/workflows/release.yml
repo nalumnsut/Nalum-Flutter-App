@@ -1,0 +1,197 @@
+# Store builds. Started only by someone with merge access pushing a v* tag
+# (docs/RELEASING.md §7). Secrets are documented in docs/RELEASING.md §4
+# and docs/RELEASING.md §5.
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    name: verify
+    runs-on: ubuntu-latest
+    outputs:
+      flutter: ${{ steps.fvm.outputs.version }}
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Tag must be on main or a release branch
+        run: |
+          if git merge-base --is-ancestor "$GITHUB_SHA" origin/main; then exit 0; fi
+          for branch in $(git branch -r --list 'origin/release/*'); do
+            if git merge-base --is-ancestor "$GITHUB_SHA" "$branch"; then exit 0; fi
+          done
+          echo "Tag ${GITHUB_REF_NAME} is not on main or a release/* branch."
+          exit 1
+
+      - name: Tag must match pubspec version
+        id: version
+        run: |
+          version="$(grep -E '^version:' apps/mobile/pubspec.yaml | sed -E 's/version: *([0-9.]+).*/\1/')"
+          if [[ "v${version}" != "${GITHUB_REF_NAME}" ]]; then
+            echo "Tag ${GITHUB_REF_NAME} does not match pubspec version ${version}."
+            exit 1
+          fi
+          echo "version=${version}" >> "$GITHUB_OUTPUT"
+
+      - name: Read Flutter version from .fvmrc
+        id: fvm
+        run: echo "version=$(jq -r .flutter .fvmrc)" >> "$GITHUB_OUTPUT"
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: ${{ steps.fvm.outputs.version }}
+          cache: true
+
+      - name: Gate
+        env:
+          CI: "true"
+        run: bash tool/check.sh
+
+  android:
+    name: android
+    needs: verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    env:
+      # `secrets` can't be used in step conditions; expose a flag instead.
+      HAS_PLAY_ACCOUNT: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON != '' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: ${{ needs.verify.outputs.flutter }}
+          cache: true
+
+      - name: Write signing config
+        env:
+          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        working-directory: apps/mobile/android
+        run: |
+          if [[ -z "$KEYSTORE_BASE64" ]]; then
+            echo "ANDROID_KEYSTORE_BASE64 is not set (docs/RELEASING.md §4)."
+            exit 1
+          fi
+          echo "$KEYSTORE_BASE64" | base64 --decode > app/upload-keystore.jks
+          {
+            echo "storeFile=upload-keystore.jks"
+            echo "storePassword=$KEYSTORE_PASSWORD"
+            echo "keyAlias=$KEY_ALIAS"
+            echo "keyPassword=$KEY_PASSWORD"
+          } > key.properties
+
+      - name: Build app bundle (prod)
+        working-directory: apps/mobile
+        run: >
+          flutter build appbundle --release --flavor prod
+          --dart-define-from-file=config/prod.json
+          --build-number=${{ github.run_number }}
+          --obfuscate --split-debug-info=build/symbols/android
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: android-${{ needs.verify.outputs.version }}
+          path: |
+            apps/mobile/build/app/outputs/bundle/prodRelease/app-prod-release.aab
+            apps/mobile/build/symbols/android
+          retention-days: 30
+
+      - name: Upload to Play internal track
+        if: env.HAS_PLAY_ACCOUNT == 'true'
+        uses: r0adkll/upload-google-play@v1
+        with:
+          serviceAccountJsonPlainText: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
+          packageName: in.ac.nsut.alumni
+          releaseFiles: apps/mobile/build/app/outputs/bundle/prodRelease/app-prod-release.aab
+          track: internal
+          status: completed
+
+      - name: Remove signing files
+        if: always()
+        run: rm -f apps/mobile/android/key.properties apps/mobile/android/app/upload-keystore.jks
+
+  ios:
+    name: ios
+    needs: verify
+    # Off until the org Apple account and signing are set up (docs/RELEASING.md §5).
+    if: vars.IOS_RELEASE_ENABLED == 'true'
+    runs-on: macos-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: ${{ needs.verify.outputs.flutter }}
+          cache: true
+
+      - name: Import distribution certificate
+        uses: apple-actions/import-codesign-certs@v3
+        with:
+          p12-file-base64: ${{ secrets.IOS_DIST_CERT_P12_BASE64 }}
+          p12-password: ${{ secrets.IOS_DIST_CERT_PASSWORD }}
+
+      - name: Download provisioning profiles
+        uses: apple-actions/download-provisioning-profiles@v3
+        with:
+          bundle-id: in.ac.nsut.alumni
+          profile-type: IOS_APP_STORE
+          issuer-id: ${{ secrets.APPSTORE_ISSUER_ID }}
+          api-key-id: ${{ secrets.APPSTORE_KEY_ID }}
+          api-private-key: ${{ secrets.APPSTORE_PRIVATE_KEY }}
+
+      - name: Write export options
+        env:
+          TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          cat > "$RUNNER_TEMP/ExportOptions.plist" <<PLIST
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+            <key>method</key><string>app-store-connect</string>
+            <key>teamID</key><string>${TEAM_ID}</string>
+            <key>uploadSymbols</key><true/>
+          </dict>
+          </plist>
+          PLIST
+
+      - name: Build IPA
+        working-directory: apps/mobile
+        run: >
+          flutter build ipa --release
+          --dart-define-from-file=config/prod.json
+          --build-number=${{ github.run_number }}
+          --obfuscate --split-debug-info=build/symbols/ios
+          --export-options-plist="$RUNNER_TEMP/ExportOptions.plist"
+
+      - name: Upload to TestFlight
+        uses: apple-actions/upload-testflight-build@v3
+        with:
+          app-path: apps/mobile/build/ios/ipa/nalum_app.ipa
+          issuer-id: ${{ secrets.APPSTORE_ISSUER_ID }}
+          api-key-id: ${{ secrets.APPSTORE_KEY_ID }}
+          api-private-key: ${{ secrets.APPSTORE_PRIVATE_KEY }}

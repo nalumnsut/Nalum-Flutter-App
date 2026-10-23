@@ -1,0 +1,37 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "NALUM dev (Android, local backend)",
+      "request": "launch",
+      "type": "dart",
+      "cwd": "apps/mobile",
+      "program": "lib/main.dart",
+      "args": ["--flavor", "dev", "--dart-define-from-file=config/dev.json"]
+    },
+    {
+      "name": "NALUM local (physical phone, config/local.json)",
+      "request": "launch",
+      "type": "dart",
+      "cwd": "apps/mobile",
+      "program": "lib/main.dart",
+      "args": ["--flavor", "dev", "--dart-define-from-file=config/local.json"]
+    },
+    {
+      "name": "NALUM staging (Android)",
+      "request": "launch",
+      "type": "dart",
+      "cwd": "apps/mobile",
+      "program": "lib/main.dart",
+      "args": ["--flavor", "staging", "--dart-define-from-file=config/staging.json"]
+    },
+    {
+      "name": "NALUM dev (iOS, no flavors yet)",
+      "request": "launch",
+      "type": "dart",
+      "cwd": "apps/mobile",
+      "program": "lib/main.dart",
+      "args": ["--dart-define-from-file=config/dev.json"]
+    }
+  ]
+}

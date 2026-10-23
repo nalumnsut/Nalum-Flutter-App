@@ -1,0 +1,17 @@
+{
+  "editor.formatOnSave": true,
+  "files.eol": "\n",
+  "files.insertFinalNewline": true,
+  "[dart]": {
+    "editor.rulers": [80],
+    "editor.codeActionsOnSave": {
+      "source.fixAll": "explicit",
+      "source.organizeImports": "explicit"
+    }
+  },
+  "search.exclude": {
+    "**/*.g.dart": true,
+    "**/*.freezed.dart": true,
+    "**/l10n/generated": true
+  }
+}
